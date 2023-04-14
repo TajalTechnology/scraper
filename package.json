@@ -1,0 +1,24 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "description": "Scraper using node js with cheerio",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": "git+https://github.com/TajalTechnology/scraper.git",
+  "keywords": [],
+  "author": "TajalTechnology <mrpresident1189@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TajalTechnology/scraper/issues"
+  },
+  "homepage": "https://github.com/TajalTechnology/scraper#readme",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^19.9.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6"
+  }
+}
