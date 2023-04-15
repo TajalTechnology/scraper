@@ -8,7 +8,6 @@ const initialUrl =
     "https://www.otomoto.pl/ciezarowe/uzytkowe/mercedes-benz/od-2014/q-actros?search%5Bfilter_enum_damaged%5D=0&search%5Border%5D=created_at%3Adesc";
 
 // async function getNextPageUrl(initialUrl) {
-//     console.log(initialUrl);
 // }
 // const nextPageUrl = getNextPageUrl(initialUrl);
 
@@ -25,7 +24,9 @@ async function scrapeOtomoto() {
 
     // Step 1: Fetch the initial page and extract the total ads count
     const initialHtml = await requestPromise(options);
+
     const $ = cheerio.load(initialHtml);
+    console.log($);
 
     const pageUrls = [];
 
@@ -55,9 +56,7 @@ async function scrapeOtomoto() {
         const totalAdds = article.length;
         return totalAdds;
     }
-    // console.log(getTotalAdsCount());
 
-    // console.log(article.length);
     article.each((index, element) => {
         /**
          * Use url and data unique id for addItems functions
