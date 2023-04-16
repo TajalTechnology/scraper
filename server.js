@@ -22,8 +22,8 @@ class Truck {
         this.url = url;
         this.initialUrl =
             "https://www.otomoto.pl/ciezarowe/uzytkowe/mercedes-benz/ od-2014/q-actros? search%5Bfilter_enum_damaged%5D=0&search%5Border%5D=created_at %3Adesc";
+
         this.options = {
-            uri: this.initialUrl,
             transform: (body) => body,
             simple: true,
             headers: {
@@ -31,6 +31,8 @@ class Truck {
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
             },
         };
+
+        this.loadInitialPage = this.loadHtmlContent(this.initialUrl);
     }
 
     /**
@@ -46,46 +48,44 @@ class Truck {
 
     /**
      *
-     * @returns total page number
+     * @returns Numbers
      */
-    async totalPageCount(url) {
-        const [$, pageUrls] = [await this.loadHtmlContent(url), []];
-        $('li[data-testid="pagination-list-item"] a').each(async (i, el) => {
-            const pageUrl = $(el).attr("href");
-            pageUrls.push(pageUrl);
-        });
+    async totalPageCount() {
+        const $ = await this.loadInitialPage;
+        const lastPageUrl = $('li[data-testid="pagination-list-item"] a')
+            .last()
+            .attr("href");
 
-        const lastPageUrl = await pageUrls[pageUrls.length - 1].split("&");
-        for (const element of lastPageUrl) {
-            if (element.includes("page=")) return Number(element.split("=")[1]);
-        }
-        return 0;
+        const totalPageCount = lastPageUrl
+            ? Number(lastPageUrl.split("page=")[1])
+            : 0;
+
+        return totalPageCount;
     }
 
     /**
      *
      * @param {*} url
-     * @returns Next page url
+     * @returns url {String} as a modified url
      */
     async getNextPageUrl(url) {
-        const urlSplit = await url.split("&");
-        const lastIndex = urlSplit[urlSplit.length - 1];
-
-        if (lastIndex.includes("page=")) {
-            const pageNo = Number(lastIndex.split("=")[1]);
-            const currentPageQueryString = `page=${pageNo}`;
-            const nextPageQueryString = `page=${pageNo + 1}`;
-            url = url.replace(`${currentPageQueryString}`, nextPageQueryString);
-            return url;
-        } else return url + "&page=2";
+        const regex = /page=(\d+)/;
+        const match = url.match(regex);
+        if (match) {
+            const currentPage = Number(match[1]);
+            const nextPage = currentPage + 1;
+            return url.replace(regex, `page=${nextPage}`);
+        } else {
+            return url + (url.includes("?") ? "&" : "?") + "page=2";
+        }
     }
 
     /**
-     *
-     * @returns Array
+     * Retrieves a list of items from a web page and returns an array of objects containing the URL and ID for each item.
+     * @returns {Array} An array of objects containing the URL and ID for each item.
      */
     async addItems() {
-        const [$, urlsAndIds] = [await this.loadHtmlContent(), []];
+        const [$, urlsAndIds] = [await this.loadInitialPage, []];
 
         $(".ooa-1e8338r > main > article").each((index, element) => {
             const url = $(element).find(".ooa-1nihvj5 > h2 > a").attr("href");
@@ -97,18 +97,15 @@ class Truck {
     }
 
     /**
-     *
-     * @returns Number
-     * Count total number of adds in this initial urls
+     * @returns {Promise<number>} - Total number of ads in the initial URLs
      */
     async getTotalAdsCount() {
-        const $ = await this.loadHtmlContent();
+        const $ = await this.loadInitialPage;
         return $(".ooa-1e8338r > main > article").length;
     }
 
-    async scrapeTruckItem(url) {
-        const $ = await this.loadHtmlContent(url);
-        const items = [];
+    async scrapeTruckItem() {
+        const [$, items] = [await this.loadInitialPage, []];
 
         $(".ooa-1e8338r > main > article").each(async (index, element) => {
             const itemId = $(element).attr("data-id");
@@ -161,27 +158,32 @@ class Truck {
         const requests = pages.map((pageUrl) => this.scrapeTruckItem(pageUrl));
         const responses = await Promise.all(requests);
         return responses.flat();
-        // const items = [];
-        // let nextPageUrl = url;
-        // for (let index = 0; index < totalPage; index++) {
-        //     const itemListInPage = await this.scrapeTruckItem(nextPageUrl);
-        //     nextPageUrl = await this.getNextPageUrl(nextPageUrl);
-        //     items.push(...itemListInPage);
-        // }
-        // return Promise.all(items);
+    }
+
+    async main() {
+        const initialUrl =
+            "https://www.otomoto.pl/ciezarowe/uzytkowe/mercedes-benz/ od-2014/q-actros? search%5Bfilter_enum_damaged%5D=0&search%5Border%5D=created_at %3Adesc";
+
+        const totalPage = await this.totalPageCount(initialUrl);
+        const nextPageUrl = await this.getNextPageUrl(initialUrl);
+        const addItems = this.addItems();
+        const getTotalAdsCount = await this.getTotalAdsCount();
+        const scrapeTruckItem = await this.scrapeTruckItem();
+        const allPageAdds = await this.allPageAdds(initialUrl, totalPage);
+
+        /**
+         * Print all functions output
+         */
+        console.log(
+            totalPage,
+            nextPageUrl,
+            addItems,
+            getTotalAdsCount,
+            scrapeTruckItem,
+            allPageAdds
+        );
     }
 }
 
-async function main() {
-    const initialUrl =
-        "https://www.otomoto.pl/ciezarowe/uzytkowe/mercedes-benz/ od-2014/q-actros? search%5Bfilter_enum_damaged%5D=0&search%5Border%5D=created_at %3Adesc";
-    const truck = new Truck();
-    const totalPage = await truck.totalPageCount(initialUrl);
-    // const nextPageUrl = await truck.getNextPageUrl(initialUrl);
-    // const addItems = await truck.addItems();
-    // const getTotalAdsCount = await truck.getTotalAdsCount();
-    const scrapeTruckItem = await truck.scrapeTruckItem(initialUrl);
-    const allPageAdds = await truck.allPageAdds(initialUrl, totalPage);
-    console.log(allPageAdds);
-}
-main();
+const truck = new Truck();
+truck.main();
