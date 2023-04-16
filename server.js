@@ -36,8 +36,8 @@ class Truck {
     }
 
     /**
-     *
-     * @returns $
+     * Load html content
+     * @returns {$}
      */
     async loadHtmlContent(url) {
         this.options.uri = url;
@@ -47,8 +47,8 @@ class Truck {
     }
 
     /**
-     *
-     * @returns Numbers
+     * Count all the page
+     * @returns {Number}
      */
     async totalPageCount() {
         const $ = await this.loadInitialPage;
@@ -64,7 +64,7 @@ class Truck {
     }
 
     /**
-     *
+     * Find next page url
      * @param {*} url
      * @returns url {String} as a modified url
      */
@@ -104,6 +104,10 @@ class Truck {
         return $(".ooa-1e8338r > main > article").length;
     }
 
+    /**
+     * Extract initial page and push data in an array
+     * @returns {Array}
+     */
     async scrapeTruckItem() {
         const $ = await this.loadInitialPage;
         const items = [];
@@ -186,6 +190,56 @@ class Truck {
     }
 
     /**
+     * Scrap every page adds and then merge those in an array
+     * @returns {Array}
+     */
+    async pagePerAdds() {
+        const $ = await this.loadInitialPage;
+        const items = [];
+
+        const elements = $(".ooa-1e8338r > main > article");
+
+        elements.each((index, element) => {
+            const itemId = $(element).attr("data-id");
+            const price = $(element).find(".eayvfn610 > span").text().trim();
+            const title = $(element)
+                .find(".ooa-1nihvj5 > h2 > a")
+                .text()
+                .trim();
+
+            const image = $(element)
+                .find("div.ooa-1g9tpob img.eayvfn618")
+                .attr("src");
+
+            /**
+             * Extract Year of production date and mileage
+             */
+            const description = [];
+            $(element)
+                .find(".ooa-1nihvj5 > div > ul > li")
+                .each((index, element) => {
+                    if (!description.includes($(element).text().trim())) {
+                        description.push($(element).text().trim());
+                    }
+                });
+            const productionDate = description[0];
+            const mileage = description[1];
+
+            const data = {
+                itemId,
+                title,
+                price,
+                mileage,
+                image,
+                productionDate,
+            };
+            items.push(data);
+        });
+
+        return await Promise.all(items);
+    }
+
+    /**
      * Return all page adds
      * @param {*} url
      * @param {*} totalPage
@@ -196,7 +250,9 @@ class Truck {
             { length: totalPage },
             (_, i) => `${url}&page=${i + 1}`
         );
-        const requests = pages.map((pageUrl) => this.scrapeTruckItem(pageUrl));
+        const requests = pages.map(
+            async (pageUrl) => await this.pagePerAdds(pageUrl)
+        );
         const responses = await Promise.all(requests);
         return responses.flat();
     }
@@ -210,7 +266,7 @@ class Truck {
         const addItems = this.addItems();
         const getTotalAdsCount = await this.getTotalAdsCount();
         const scrapeTruckItem = await this.scrapeTruckItem();
-        // const allPageAdds = await this.allPageAdds(initialUrl, totalPage);
+        const allPageAdds = await this.allPageAdds(initialUrl, totalPage);
 
         /**
          * Print all functions output
@@ -220,8 +276,8 @@ class Truck {
             nextPageUrl,
             addItems,
             getTotalAdsCount,
-            scrapeTruckItem
-            // allPageAdds
+            scrapeTruckItem,
+            allPageAdds
         );
     }
 }
