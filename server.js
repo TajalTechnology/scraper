@@ -105,9 +105,13 @@ class Truck {
     }
 
     async scrapeTruckItem() {
-        const [$, items] = [await this.loadInitialPage, []];
+        const $ = await this.loadInitialPage;
+        const items = [];
 
-        $(".ooa-1e8338r > main > article").each(async (index, element) => {
+        const elements = $(".ooa-1e8338r > main > article");
+        const promises = [];
+
+        elements.each((index, element) => {
             const itemId = $(element).attr("data-id");
             const price = $(element).find(".eayvfn610 > span").text().trim();
             const date = $(element).find(".ooa-0").text().trim();
@@ -138,26 +142,36 @@ class Truck {
                 .find(".ooa-1nihvj5 > h2 > a")
                 .attr("href");
 
-            const { power, registrationDate } = await this.powerAndRegDate(
-                productDetailsUrl
+            const promise = this.powerAndRegDate(productDetailsUrl).then(
+                ({ power, registrationDate }) => {
+                    const data = {
+                        itemId,
+                        title,
+                        price,
+                        mileage,
+                        image,
+                        power,
+                        productionDate,
+                        registrationDate,
+                    };
+
+                    items.push(data);
+                }
             );
 
-            const data = {
-                itemId,
-                title,
-                price,
-                mileage,
-                image,
-                power,
-                productionDate,
-                registrationDate,
-            };
-
-            items.push(data);
+            promises.push(promise);
         });
-        return Promise.all(items);
+
+        await Promise.all(promises);
+
+        return items;
     }
 
+    /**
+     * Load every details page and retrun power and registrationDate
+     * @param {*} url
+     * @returns {power, registrationDate}
+     */
     async powerAndRegDate(url) {
         const $ = await this.loadHtmlContent(url);
         const powerElement = $(
@@ -168,11 +182,15 @@ class Truck {
             .first()
             .text()
             .trim();
-
-        console.log(power, registrationDate);
         return { power, registrationDate };
     }
 
+    /**
+     * Return all page adds
+     * @param {*} url
+     * @param {*} totalPage
+     * @returns {Array}
+     */
     async allPageAdds(url, totalPage) {
         const pages = Array.from(
             { length: totalPage },
@@ -187,10 +205,10 @@ class Truck {
         const initialUrl =
             "https://www.otomoto.pl/ciezarowe/uzytkowe/mercedes-benz/ od-2014/q-actros? search%5Bfilter_enum_damaged%5D=0&search%5Border%5D=created_at %3Adesc";
 
-        // const totalPage = await this.totalPageCount(initialUrl);
-        // const nextPageUrl = await this.getNextPageUrl(initialUrl);
-        // const addItems = this.addItems();
-        // const getTotalAdsCount = await this.getTotalAdsCount();
+        const totalPage = await this.totalPageCount(initialUrl);
+        const nextPageUrl = await this.getNextPageUrl(initialUrl);
+        const addItems = this.addItems();
+        const getTotalAdsCount = await this.getTotalAdsCount();
         const scrapeTruckItem = await this.scrapeTruckItem();
         // const allPageAdds = await this.allPageAdds(initialUrl, totalPage);
 
@@ -198,10 +216,10 @@ class Truck {
          * Print all functions output
          */
         console.log(
-            // totalPage,
-            // nextPageUrl
-            // addItems,
-            // getTotalAdsCount,
+            totalPage,
+            nextPageUrl,
+            addItems,
+            getTotalAdsCount,
             scrapeTruckItem
             // allPageAdds
         );
