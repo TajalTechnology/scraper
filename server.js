@@ -133,7 +133,14 @@ class Truck {
                 });
             const productionDate = description[0];
             const mileage = description[1];
-            const url = $(element).find(".ooa-1nihvj5 > h2 > a").attr("href");
+
+            const productDetailsUrl = $(element)
+                .find(".ooa-1nihvj5 > h2 > a")
+                .attr("href");
+
+            const { power, registrationDate } = await this.powerAndRegDate(
+                productDetailsUrl
+            );
 
             const data = {
                 itemId,
@@ -141,13 +148,31 @@ class Truck {
                 price,
                 mileage,
                 image,
+                power,
                 productionDate,
-                registrationDate: date,
+                registrationDate,
             };
 
             items.push(data);
         });
         return Promise.all(items);
+    }
+
+    async powerAndRegDate(url) {
+        const $ = await this.loadHtmlContent(url);
+        const params = $(".offer-params__item");
+        let power;
+        params.each((index, element) => {
+            const label = $(element).find(".offer-params__label").text().trim();
+            if (label === "Moc") {
+                power = $(element).find(".offer-params__value").text().trim();
+            }
+        });
+        const registrationDate = $(".offer-meta__item span.offer-meta__value")
+            .eq(0)
+            .text()
+            .trim();
+        return { power, registrationDate };
     }
 
     async allPageAdds(url, totalPage) {
@@ -164,23 +189,23 @@ class Truck {
         const initialUrl =
             "https://www.otomoto.pl/ciezarowe/uzytkowe/mercedes-benz/ od-2014/q-actros? search%5Bfilter_enum_damaged%5D=0&search%5Border%5D=created_at %3Adesc";
 
-        const totalPage = await this.totalPageCount(initialUrl);
-        const nextPageUrl = await this.getNextPageUrl(initialUrl);
-        const addItems = this.addItems();
-        const getTotalAdsCount = await this.getTotalAdsCount();
+        // const totalPage = await this.totalPageCount(initialUrl);
+        // const nextPageUrl = await this.getNextPageUrl(initialUrl);
+        // const addItems = this.addItems();
+        // const getTotalAdsCount = await this.getTotalAdsCount();
         const scrapeTruckItem = await this.scrapeTruckItem();
-        const allPageAdds = await this.allPageAdds(initialUrl, totalPage);
+        // const allPageAdds = await this.allPageAdds(initialUrl, totalPage);
 
         /**
          * Print all functions output
          */
         console.log(
-            totalPage,
-            nextPageUrl,
-            addItems,
-            getTotalAdsCount,
-            scrapeTruckItem,
-            allPageAdds
+            // totalPage,
+            // nextPageUrl
+            // addItems,
+            // getTotalAdsCount,
+            scrapeTruckItem
+            // allPageAdds
         );
     }
 }
