@@ -160,18 +160,16 @@ class Truck {
 
     async powerAndRegDate(url) {
         const $ = await this.loadHtmlContent(url);
-        const params = $(".offer-params__item");
-        let power;
-        params.each((index, element) => {
-            const label = $(element).find(".offer-params__label").text().trim();
-            if (label === "Moc") {
-                power = $(element).find(".offer-params__value").text().trim();
-            }
-        });
+        const powerElement = $(
+            '.offer-params__item .offer-params__label:contains("Moc")'
+        ).next(".offer-params__value");
+        const power = powerElement.text().trim();
         const registrationDate = $(".offer-meta__item span.offer-meta__value")
-            .eq(0)
+            .first()
             .text()
             .trim();
+
+        console.log(power, registrationDate);
         return { power, registrationDate };
     }
 
